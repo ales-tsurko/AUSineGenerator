@@ -1,5 +1,5 @@
 # AUSineGenerator
-Simple AU v 3 sine tone generator. Based on the Apple's FilterDemo project.
+Simple AU v 3 sine tone generator. Based on the Apple's AudioUnitV3Example.
 
 AUSineGeneratorFramework contains the implementaion of the AUSineGenerator.
 
