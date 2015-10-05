@@ -12,8 +12,8 @@
 
 const double SAMPLE_RATE = 44100.0;
 const AVAudioChannelCount NUM_OF_CHANNELS = 2;
-const AUValue minFrequency = 110;
-const AUValue maxFrequency = 1760;
+const AUValue minFrequency = 20;
+const AUValue maxFrequency = 20000;
 
 @interface AUSineGenerator ()
 
@@ -90,7 +90,7 @@ const AUValue maxFrequency = 1760;
     
     // Initialize the parameter values.
     frequencyParam.value = 440.0;
-    amplitudeParam.value = 0.99;
+    amplitudeParam.value = 0.0;
     _kernel.setParameter(SineGeneratorParamFrequency, frequencyParam.value);
     _kernel.setParameter(SineGeneratorParamAmplitude, amplitudeParam.value);
     

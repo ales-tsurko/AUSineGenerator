@@ -81,6 +81,11 @@ class ViewController: UIViewController {
                 }
             }
         }
+        
+        frequencySlider.value = frequencyParameter.value
+        amplitudeSlider.value = amplitudeParameter.value
+        frequencyValueLabel.text = frequencyParameter.stringFromValue(nil)
+        amplitudeValueLabel.text = amplitudeParameter.stringFromValue(nil)
     }
 
     @IBAction func frequencySliderAction(sender: UISlider) {

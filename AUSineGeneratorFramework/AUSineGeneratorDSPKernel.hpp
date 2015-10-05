@@ -9,6 +9,8 @@
 #import "DSPKernel.hpp"
 #import "ParameterRamper.hpp"
 
+const float twopi = 2 * M_PI;
+
 enum {
     SineGeneratorParamFrequency = 0,
     SineGeneratorParamAmplitude = 1
@@ -24,7 +26,7 @@ public:
         void calculateValueForPhase(float frequency, float amplitude, float phase, float sampleRate) {
             float cycleLength = sampleRate / frequency;
             
-            value = sinf(2 * M_PI * (phase / cycleLength)) * amplitude;
+            value = sinf(twopi * (phase / cycleLength)) * amplitude;
         }
     };
 
@@ -35,7 +37,7 @@ public:
     void init(int channelCount, double inSampleRate) {
         numberOfChannels = channelCount;
         sampleRate = float(inSampleRate);
-        maxFrequency = 1760;
+        maxFrequency = 20000;
         reciprocalOfMaxFrequency = 1.0 / maxFrequency;
     }
     
