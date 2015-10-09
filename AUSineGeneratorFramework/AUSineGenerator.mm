@@ -41,15 +41,15 @@ const AUValue maxFrequency = 20000;
     return acd;
 }
 
-+ (void)initialize {
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        [self registerSubclass:[AUSineGenerator class]
-        asComponentDescription:[self audioComponentDescription]
-                          name:@"AUSineGenerator"
-                       version:UINT32_MAX];
-    });
-}
+//+ (void)initialize {
+//    static dispatch_once_t onceToken;
+//    dispatch_once(&onceToken, ^{
+//        [self registerSubclass:[AUSineGenerator class]
+//        asComponentDescription:[self audioComponentDescription]
+//                          name:@"AUSineGenerator"
+//                       version:UINT32_MAX];
+//    });
+//}
 
 - (instancetype)initWithComponentDescription:(AudioComponentDescription)componentDescription options:(AudioComponentInstantiationOptions)options error:(NSError **)outError {
     self = [super initWithComponentDescription:componentDescription options:options error:outError];
@@ -150,20 +150,15 @@ const AUValue maxFrequency = 20000;
     
     _kernel.init(self.outputBus.format.channelCount, self.outputBus.format.sampleRate);
     
-    // There is a bug with this code when using scheduleParameter. The same bug in the Apple's FilterDemoApp.
-    // I use startRamp of the kernel instead of scheduleParameter to prevent this problem.
+    // There is a bug with this code when using scheduleParameter. The same bug has the Apple's FilterDemoApp.
+    // I use startRamp of the kernel instead of the scheduleParameter to prevent this problem.
     /*
      While rendering, we want to schedule all parameter changes. Setting them
      off the render thread is not thread safe.
      */
-//    __block AUScheduleParameterBlock scheduleParameter = self.scheduleParameterBlock;
     
     // Ramp over 10 milliseconds.
     __block AUAudioFrameCount rampTime = AUAudioFrameCount(0.01 * self.outputBus.format.sampleRate);
-    
-//    self.parameterTree.implementorValueObserver = ^(AUParameter *param, AUValue value) {
-//        scheduleParameter(AUEventSampleTimeImmediate, rampTime, param.address, value);
-//    };
     
     __block AUSineGeneratorDSPKernel *sineGeneratorKernel = &_kernel;
     self.parameterTree.implementorValueObserver = ^(AUParameter *param, AUValue value) {

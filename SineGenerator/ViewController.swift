@@ -26,6 +26,8 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        AUAudioUnit.registerSubclass(AUSineGenerator.self, asComponentDescription: AUSineGenerator.audioComponentDescription(), name: "AUSineGenerator", version: UInt32.max)
+        
         do {
             try AVAudioSession.sharedInstance().setCategory(AVAudioSessionCategoryPlayback)
             
@@ -87,11 +89,11 @@ class ViewController: UIViewController {
         frequencyValueLabel.text = frequencyParameter.stringFromValue(nil)
         amplitudeValueLabel.text = amplitudeParameter.stringFromValue(nil)
     }
-
+    
     @IBAction func frequencySliderAction(sender: UISlider) {
         frequencyParameter.value = sender.value
     }
-
+    
     @IBAction func amplitudeSliderAction(sender: UISlider) {
         amplitudeParameter.value = sender.value
     }

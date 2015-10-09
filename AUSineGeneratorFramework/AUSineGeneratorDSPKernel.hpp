@@ -8,6 +8,7 @@
 
 #import "DSPKernel.hpp"
 #import "ParameterRamper.hpp"
+#include <Accelerate/Accelerate.h>
 
 const float twopi = 2 * M_PI;
 
@@ -17,19 +18,33 @@ enum {
 };
 
 class AUSineGeneratorDSPKernel : public DSPKernel {
-public:
+private:
+    // MARK: Member Variables
+    static const int tableSize = 40000;
+    float* sineTable = new float[tableSize];
+    float incr = 0.0;
     
-    struct SineGen {
-        float value = 0;
-        double currentPhase;
-        
-        void calculateValueForPhase(float frequency, float amplitude, float phase, float sampleRate) {
-            float cycleLength = sampleRate / frequency;
-            
-            value = sinf(twopi * (phase / cycleLength)) * amplitude;
-        }
-    };
-
+    int numberOfChannels;
+    float sampleRate = 44100.0;
+    float maxFrequency;
+    float reciprocalOfMaxFrequency;
+    
+    AudioBufferList* outBufferListPtr = nullptr;
+    
+    void fillSineTable() {
+        int tabLength = tableSize;
+        float initValue = 0;
+        float incr = 1.0;
+        vDSP_vramp(&initValue, &incr, sineTable, 1, vDSP_Length(tabLength));
+        float phaseStep = twopi / float(tabLength);
+        vDSP_vsmul(sineTable, 1, &phaseStep, sineTable, 1, vDSP_Length(tabLength));
+        vvsinf(sineTable, sineTable, &tabLength);
+    }
+    
+public:
+    // Parameters.
+    ParameterRamper frequencyRamper = 440.0 / 44100.0;
+    ParameterRamper amplitudeRamper = 0.99;
     
     // MARK: Member Functions
     AUSineGeneratorDSPKernel() {}
@@ -39,6 +54,7 @@ public:
         sampleRate = float(inSampleRate);
         maxFrequency = 20000;
         reciprocalOfMaxFrequency = 1.0 / maxFrequency;
+        fillSineTable();
     }
     
     void setParameter(AUParameterAddress address, AUValue value) {
@@ -56,7 +72,6 @@ public:
     AUValue getParameter(AUParameterAddress address) {
         switch (address) {
             case SineGeneratorParamFrequency:
-                // Return the goal. It is not thread safe to return the ramping value.
                 return frequencyRamper.goal() * maxFrequency;
                 
             case SineGeneratorParamAmplitude:
@@ -69,7 +84,7 @@ public:
     void startRamp(AUParameterAddress address, AUValue value, AUAudioFrameCount duration) override {
         switch (address) {
             case SineGeneratorParamFrequency:
-                frequencyRamper.startRamp(clamp(value * reciprocalOfMaxFrequency, 0.0f, 0.99f), duration);
+                frequencyRamper.startRamp(clamp(value * reciprocalOfMaxFrequency, 0.0f, 1.0f), duration);
                 break;
                 
             case SineGeneratorParamAmplitude:
@@ -83,47 +98,22 @@ public:
     }
     
     void process(AUAudioFrameCount frameCount, AUAudioFrameCount bufferOffset) override {
-        double phase = generator.currentPhase;
-        
         for (int frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
             float frequency = frequencyRamper.getStep() * maxFrequency;
             float amplitude = amplitudeRamper.getStep();
-            float cycleLength = sampleRate / frequency;
+            float sampleLength = frequency / sampleRate;
             
-            generator.calculateValueForPhase(frequency, amplitude, phase, sampleRate);
+            incr += sampleLength;
+            incr -= floorf(incr);
+            
+            int index = int(tableSize * incr);
+            float value = sineTable[index] * amplitude;
             
             for (int channel = 0; channel < numberOfChannels; ++channel) {
                 float* out = (float*)outBufferListPtr->mBuffers[channel].mData;
                 
-                out[frameIndex] = generator.value;
-            }
-            
-            phase++;
-            if (phase > cycleLength) {
-                phase-=cycleLength;
+                out[frameIndex] = value;
             }
         }
-        
-        generator.currentPhase = phase;
-        
     }
-    
-    // MARK: Member Variables
-    
-private:
-    SineGen generator;
-    
-    int numberOfChannels;
-    float sampleRate = 44100;
-    float maxFrequency;
-    float reciprocalOfMaxFrequency;
-    
-    AudioBufferList* outBufferListPtr = nullptr;
-    
-public:
-    
-    // Parameters.
-    ParameterRamper frequencyRamper = 440.0 / 44100.0;
-    ParameterRamper amplitudeRamper = 0.99;
-    
 };
