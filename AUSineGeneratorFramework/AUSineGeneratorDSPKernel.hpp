@@ -20,8 +20,8 @@ enum {
 class AUSineGeneratorDSPKernel : public DSPKernel {
 private:
     // MARK: Member Variables
-    static const int tableSize = 40000;
-    float* sineTable = new float[tableSize];
+    static const int tableSize = 1<<16;
+    float* sineTable = new float[tableSize+1];
     float incr = 0.0;
     
     int numberOfChannels;
@@ -35,8 +35,9 @@ private:
         int tabLength = tableSize;
         float initValue = 0;
         float incr = 1.0;
-        vDSP_vramp(&initValue, &incr, sineTable, 1, vDSP_Length(tabLength));
         float phaseStep = twopi / float(tabLength);
+        
+        vDSP_vramp(&initValue, &incr, sineTable, 1, vDSP_Length(tabLength));
         vDSP_vsmul(sineTable, 1, &phaseStep, sineTable, 1, vDSP_Length(tabLength));
         vvsinf(sineTable, sineTable, &tabLength);
     }
@@ -106,8 +107,13 @@ public:
             incr += sampleLength;
             incr -= floorf(incr);
             
-            int index = int(tableSize * incr);
-            float value = sineTable[index] * amplitude;
+            float index = float(tableSize) * incr;
+            float decimal = float(index) - floorf(float(index));
+            
+            float a0 = sineTable[int(index)];
+            float a1 = sineTable[int(index) + 1];
+            
+            float value = amplitude * (a0 + decimal * (a1 - a0));
             
             for (int channel = 0; channel < numberOfChannels; ++channel) {
                 float* out = (float*)outBufferListPtr->mBuffers[channel].mData;
